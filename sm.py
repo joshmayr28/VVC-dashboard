@@ -90,8 +90,7 @@ SHEET_ID = '1MvGIdmM9eW89vSIoMzlg6k8x6oXBr1XKfrCoLIBkzq0'
 SHEET_NAME = 'History'
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 
-# Get JSON string from secrets and load as dict
-key_dict = dict(st.secrets["GOOGLE_SERVICE_ACCOUNT_JSON"])
+key_dict = st.secrets["GOOGLE_SERVICE_ACCOUNT_JSON"]
 creds = ServiceAccountCredentials.from_json_keyfile_dict(key_dict, scope)
 client = gspread.authorize(creds)
 sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_NAME)
