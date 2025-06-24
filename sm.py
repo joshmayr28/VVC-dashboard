@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 import urllib.parse
 import re
 import math
+import json
 
 GROWTH_DAYS = 7
 st.set_page_config("VVC Social Dashboard", layout="wide", initial_sidebar_state="expanded")
@@ -110,9 +111,9 @@ st.markdown("""
 # ---- Google Sheets ----
 SHEET_ID = '1MvGIdmM9eW89vSIoMzlg6k8x6oXBr1XKfrCoLIBkzq0'
 SHEET_NAME = 'History'
-JSON_KEYFILE = '/Users/joshbatuigas/service-account.json'
+creds_dict = st.secrets["gcp_service_account"]
+creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(creds_dict), scope)
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name(JSON_KEYFILE, scope)
 client = gspread.authorize(creds)
 sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_NAME)
 
