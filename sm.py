@@ -1,4 +1,5 @@
 import streamlit as st
+import json
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
@@ -85,15 +86,16 @@ st.markdown("""
     🚀 Viral Video Club - Bootcamp Social Media Dashboard
 </div>
 """, unsafe_allow_html=True)
-
-# ---- Google Sheets ----
 SHEET_ID = '1MvGIdmM9eW89vSIoMzlg6k8x6oXBr1XKfrCoLIBkzq0'
 SHEET_NAME = 'History'
-JSON_KEYFILE = '/Users/joshbatuigas/service-account.json'
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name(JSON_KEYFILE, scope)
+
+# Get JSON string from secrets and load as dict
+key_dict = json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT_JSON"])
+creds = ServiceAccountCredentials.from_json_keyfile_dict(key_dict, scope)
 client = gspread.authorize(creds)
 sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_NAME)
+
 
 @st.cache_data(ttl=300)
 def load_data():
