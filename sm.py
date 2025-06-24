@@ -93,8 +93,8 @@ st.markdown("""
     padding: 1.1em 2em 1.1em 1em;
     border-radius: 18px;
     margin-bottom: 1.3em;
-    font-size: 3.5em;
-    font-weight: 1000;
+    font-size: 2.8em;
+    font-weight: 800;
     letter-spacing: -1px;
     background: linear-gradient(90deg,#fcb69f 10%,#a1c4fd 90%);
     color: #fff;
@@ -104,7 +104,7 @@ st.markdown("""
     align-items: center;
     gap: 1.3em;
 '>
-    🚀 Viral Video Club - Bootcamp Social Media Dashboard
+     Viral Video Club - Bootcamp Social Media Dashboard
 </div>
 """, unsafe_allow_html=True)
 
@@ -751,52 +751,52 @@ with menu_tabs[1]:
     with st.expander("📊 Show raw data table"):
         st.dataframe(display_df)
 
-st.header("Weekly Engagement Metrics")
-if df_weekly.empty:
-    st.info("No weekly engagement data found.")
-else:
-    all_students = sorted(df_weekly['Name'].dropna().unique())
-    eng_student_filter = st.selectbox(
-        "Engagement: Student (optional)",
-        options=["All Students"] + all_students,
-        key="engagement_student"
-    )
-    plot_df = df_weekly.copy()
-    if eng_student_filter != "All Students":
-        plot_df = plot_df[plot_df['Name'] == eng_student_filter]
-
-    metrics = [
-        ("Videos Posted", "Videos_Posted"),
-        ("Zoom Calls Attended", "Zoom_Calls_Attended"),
-        ("Discord Feedback Requested", "Discord_Feedback_Requested"),
-        ("% Course Completed", "Course_Completed_Percent")
-    ]
-
-    for title, col in metrics:
-        if col not in plot_df.columns:
-            st.warning(f"Column `{col}` not found in Engagement_Weekly.")
-            continue
-        st.markdown(f"#### {title} per Week")
-        if plot_df.empty:
-            st.info(f"No data for {title}")
-            continue
-        fig = px.bar(
-            plot_df,
-            x="Week",
-            y=col,
-            color="Name" if eng_student_filter == "All Students" else None,
-            title=f"{title} Each Week"
+    st.header("Weekly Engagement Metrics")
+    if df_weekly.empty:
+        st.info("No weekly engagement data found.")
+    else:
+        all_students = sorted(df_weekly['Name'].dropna().unique())
+        eng_student_filter = st.selectbox(
+            "Engagement: Student (optional)",
+            options=["All Students"] + all_students,
+            key="engagement_student"
         )
-        st.plotly_chart(fig, use_container_width=True)
-        with st.expander(f"📊 Show data for {title}"):
-            st.dataframe(plot_df[["Name", "Week", col]])
-        csv = plot_df[["Name", "Week", col]].to_csv(index=False).encode()
-        st.download_button(f"⬇️ Download {title} Data as CSV", csv, file_name=f"{col}_weekly_export.csv", mime="text/csv")
-
-        st.markdown("""
-<hr style="margin-top:3em;margin-bottom:0;border:none;border-top:1.5px solid #fcb69f33;">
-<div style='text-align:center;color:#90a7d0;font-size:1.09em;margin-top:.6em;margin-bottom:0.3em;'>
-    © Josh Batuigas 2025
-</div>
-""", unsafe_allow_html=True)
+        plot_df = df_weekly.copy()
+        if eng_student_filter != "All Students":
+            plot_df = plot_df[plot_df['Name'] == eng_student_filter]
+    
+        metrics = [
+            ("Videos Posted", "Videos_Posted"),
+            ("Zoom Calls Attended", "Zoom_Calls_Attended"),
+            ("Discord Feedback Requested", "Discord_Feedback_Requested"),
+            ("% Course Completed", "Course_Completed_Percent")
+        ]
+    
+        for title, col in metrics:
+            if col not in plot_df.columns:
+                st.warning(f"Column `{col}` not found in Engagement_Weekly.")
+                continue
+            st.markdown(f"#### {title} per Week")
+            if plot_df.empty:
+                st.info(f"No data for {title}")
+                continue
+            fig = px.bar(
+                plot_df,
+                x="Week",
+                y=col,
+                color="Name" if eng_student_filter == "All Students" else None,
+                title=f"{title} Each Week"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            with st.expander(f"📊 Show data for {title}"):
+                st.dataframe(plot_df[["Name", "Week", col]])
+            csv = plot_df[["Name", "Week", col]].to_csv(index=False).encode()
+            st.download_button(f"⬇️ Download {title} Data as CSV", csv, file_name=f"{col}_weekly_export.csv", mime="text/csv")
+    
+            st.markdown("""
+    <hr style="margin-top:3em;margin-bottom:0;border:none;border-top:1.5px solid #fcb69f33;">
+    <div style='text-align:center;color:#90a7d0;font-size:1.09em;margin-top:.6em;margin-bottom:0.3em;'>
+        © Josh Batuigas 2025
+    </div>
+    """, unsafe_allow_html=True)
 
