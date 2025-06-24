@@ -111,9 +111,15 @@ st.markdown("""
 # ---- Google Sheets ----
 SHEET_ID = '1MvGIdmM9eW89vSIoMzlg6k8x6oXBr1XKfrCoLIBkzq0'
 SHEET_NAME = 'History'
+scope = [
+    'https://spreadsheets.google.com/feeds',
+    'https://www.googleapis.com/auth/drive'
+]
+
 creds_dict = st.secrets["gcp_service_account"]
 creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(creds_dict), scope)
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+
+
 client = gspread.authorize(creds)
 sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_NAME)
 
