@@ -566,7 +566,12 @@ f"""
                 highlight=highlight,
                 medal=medal
             )
-
+    st.markdown("""
+    <hr style="margin-top:3em;margin-bottom:0;border:none;border-top:1.5px solid #fcb69f33;">
+    <div style='text-align:center;color:#90a7d0;font-size:1.09em;margin-top:.6em;margin-bottom:0.3em;'>
+        © Josh Batuigas 2025
+    </div>
+    """, unsafe_allow_html=True)
 # --- ANALYTICS TAB ---
 with menu_tabs[1]:
     st.title("Analytics")
