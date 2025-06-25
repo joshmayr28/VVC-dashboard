@@ -416,31 +416,41 @@ with lcol:
                 if not card_has_content:
                     continue
 
+                NO_PREVIEW_IMAGE = "https://i.imgur.com/sUFH1Aq.png"  # Or your own
+
                 preview_url = safe(latest_row.get(f"{prefix}_LaPostPreview", "")) if f"{prefix}_LaPostPreview" in latest_row else ""
                 url_val = safe(latest_row.get(f"{prefix}_LaPostURL", ""))
                 
                 lines = []
                 
-                # 1. Preview image (clickable if post URL exists)
-                if preview_url:
+                # --- New robust image preview logic ---
+                # Show real preview if available, else show 'no preview' image (not clickable)
+                display_url = preview_url if (preview_url and preview_url.startswith("http")) else NO_PREVIEW_IMAGE
+                
+                if display_url and display_url != NO_PREVIEW_IMAGE:
                     if url_val:
                         lines.append(
                             f"<a href='{url_val}' target='_blank'>"
-                            f"<img src='{preview_url}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;'/>"
+                            f"<img src='{display_url}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;' alt='Post preview'/>"
                             f"</a>"
                         )
                     else:
                         lines.append(
-                            f"<img src='{preview_url}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;'/>"
+                            f"<img src='{display_url}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;' alt='Post preview'/>"
                         )
-                
-                # 2. If no preview, show View Post link if url available
-                elif url_val:
+                else:
+                    # Always show fallback image (not clickable)
                     lines.append(
-                        f"<div style='margin:.5em 0 .1em 0;font-size:1.09em;'>"
-                        f"<a href='{url_val}' target='_blank' style='color:{plat['brand']};font-weight:700;text-decoration:underline;'>View Post</a>"
-                        f"</div>"
+                        f"<img src='{NO_PREVIEW_IMAGE}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;opacity:0.45;' alt='No preview available'/>"
                     )
+                    # Optionally, also add "View Post" link if url_val exists
+                    if url_val:
+                        lines.append(
+                            f"<div style='font-size:1.08em;margin-bottom:3px;'>"
+                            f"<a href='{url_val}' target='_blank' style='color:{plat['brand']};font-weight:600;text-decoration:underline;'>View Post</a>"
+                            f"</div>"
+                        )
+
                 
                 # 3. Caption as clickable or colored
                 if cap_trunc:
