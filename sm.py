@@ -416,20 +416,25 @@ with lcol:
                 if not card_has_content:
                     continue
 
+                preview_url = safe(latest_row.get(f"{prefix}_LaPostPreview", "")) if f"{prefix}_LaPostPreview" in latest_row else ""
+                url_val = safe(latest_row.get(f"{prefix}_LaPostURL", ""))
+
                 lines = []
 
-                # 1. Caption as a clickable link (redirects to post)
-                if cap_trunc:
+                # 1. Preview image (clickable if post URL exists)
+                if preview_url:
                     if url_val:
                         lines.append(
-                            f"<div style='margin:.5em 0 .1em 0;font-size:1.09em;'>"
-                            f"<a href='{url_val}' target='_blank' style='color:{plat['brand']};font-weight:700;text-decoration:underline;'>{cap_trunc}</a>"
-                            f"</div>"
+                            f"<a href='{url_val}' target='_blank'>"
+                            f"<img src='{preview_url}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;'/>"
+                            f"</a>"
                         )
                     else:
                         lines.append(
-                            f"<div style='margin:.5em 0 .1em 0;font-size:1.09em;color:{plat['brand']};font-weight:700;text-decoration:underline;'>{cap_trunc}</div>"
+                            f"<img src='{preview_url}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;'/>"
                         )
+
+                # 2. If no preview, show View Post link if url available
                 elif url_val:
                     lines.append(
                         f"<div style='margin:.5em 0 .1em 0;font-size:1.09em;'>"
@@ -437,7 +442,20 @@ with lcol:
                         f"</div>"
                     )
 
-                # 2. Date, likes, comments (single line)
+                # 3. Caption as clickable or colored
+                if cap_trunc:
+                    if url_val:
+                        lines.append(
+                            f"<div style='font-size:1.09em;'>"
+                            f"<a href='{url_val}' target='_blank' style='color:{plat['brand']};font-weight:700;text-decoration:underline;'>{cap_trunc}</a>"
+                            f"</div>"
+                        )
+                    else:
+                        lines.append(
+                            f"<div style='font-size:1.09em;color:{plat['brand']};font-weight:700;text-decoration:underline;'>{cap_trunc}</div>"
+                        )
+
+                # 4. Date, likes, comments (single line)
                 stat_line = []
                 if date_display:
                     stat_line.append(f"<span style='color:#aaa;'>{date_display}</span>")
@@ -450,7 +468,7 @@ with lcol:
                         f"<div style='color:#232323;font-size:1.06em;margin-top:2px;'>{' &nbsp; '.join(stat_line)}</div>"
                     )
 
-                    info_lines = "".join(lines)
+                info_lines = "".join(lines)
 
                 st.markdown(
 f"""
