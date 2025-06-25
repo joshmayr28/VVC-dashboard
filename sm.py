@@ -1,6 +1,7 @@
 import streamlit as st
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import json
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -9,7 +10,11 @@ import plotly.graph_objects as go
 import urllib.parse
 import re
 import math
-import json
+
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+creds_dict = st.secrets["gcp_service_account"]
+creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(creds_dict), scope)
+client = gspread.authorize(creds)
 
 GROWTH_DAYS = 7
 st.set_page_config("VVC Social Dashboard", layout="wide", initial_sidebar_state="expanded")
@@ -93,8 +98,8 @@ st.markdown("""
     padding: 1.1em 2em 1.1em 1em;
     border-radius: 18px;
     margin-bottom: 1.3em;
-    font-size: 2.8em;
-    font-weight: 800;
+    font-size: 3.5em;
+    font-weight: 1000;
     letter-spacing: -1px;
     background: linear-gradient(90deg,#fcb69f 10%,#a1c4fd 90%);
     color: #fff;
@@ -104,22 +109,16 @@ st.markdown("""
     align-items: center;
     gap: 1.3em;
 '>
-     Viral Video Club - Bootcamp Social Media Dashboard
+    🚀 Viral Video Club - Bootcamp Social Media Dashboard
 </div>
 """, unsafe_allow_html=True)
 
 # ---- Google Sheets ----
 SHEET_ID = '1MvGIdmM9eW89vSIoMzlg6k8x6oXBr1XKfrCoLIBkzq0'
 SHEET_NAME = 'History'
-scope = [
-    'https://spreadsheets.google.com/feeds',
-    'https://www.googleapis.com/auth/drive'
-]
-
-creds_dict = st.secrets["gcp_service_account"]
-creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(creds_dict), scope)
-
-
+JSON_KEYFILE = '/Users/joshbatuigas/service-account.json'
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+creds = ServiceAccountCredentials.from_json_keyfile_name(JSON_KEYFILE, scope)
 client = gspread.authorize(creds)
 sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_NAME)
 
@@ -335,7 +334,7 @@ with lcol:
                 user_val = safe(row.get(plat["user"], ""))
                 if not user_val:
                     continue
-
+                        
                 foll_val = parse_number(row.get(plat["foll"], 0))
                 prefix = plat["prefix"]
                 student_rows = df[(df['Name'] == row['Name']) & (~df[f"{prefix}_Followers"].isna())].copy()
@@ -416,20 +415,26 @@ with lcol:
                 if not card_has_content:
                     continue
 
+                # Use *_LaPostPreview for preview image
+                preview_url = safe(latest_row.get(f"{prefix}_LaPostPreview", "")) if f"{prefix}_LaPostPreview" in latest_row else ""
+                url_val = safe(latest_row.get(f"{prefix}_LaPostURL", ""))
+
                 lines = []
 
-                # 1. Caption as a clickable link (redirects to post)
-                if cap_trunc:
+                # 1. Preview image (clickable if post URL exists)
+                if preview_url:
                     if url_val:
                         lines.append(
-                            f"<div style='margin:.5em 0 .1em 0;font-size:1.09em;'>"
-                            f"<a href='{url_val}' target='_blank' style='color:{plat['brand']};font-weight:700;text-decoration:underline;'>{cap_trunc}</a>"
-                            f"</div>"
+                            f"<a href='{url_val}' target='_blank'>"
+                            f"<img src='{preview_url}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;'/>"
+                            f"</a>"
                         )
                     else:
                         lines.append(
-                            f"<div style='margin:.5em 0 .1em 0;font-size:1.09em;color:{plat['brand']};font-weight:700;text-decoration:underline;'>{cap_trunc}</div>"
+                            f"<img src='{preview_url}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;'/>"
                         )
+
+                # 2. If no preview, show View Post link if url available
                 elif url_val:
                     lines.append(
                         f"<div style='margin:.5em 0 .1em 0;font-size:1.09em;'>"
@@ -437,7 +442,20 @@ with lcol:
                         f"</div>"
                     )
 
-                # 2. Date, likes, comments (single line)
+                # 3. Caption as clickable or colored
+                if cap_trunc:
+                    if url_val:
+                        lines.append(
+                            f"<div style='font-size:1.09em;'>"
+                            f"<a href='{url_val}' target='_blank' style='color:{plat['brand']};font-weight:700;text-decoration:underline;'>{cap_trunc}</a>"
+                            f"</div>"
+                        )
+                    else:
+                        lines.append(
+                            f"<div style='font-size:1.09em;color:{plat['brand']};font-weight:700;text-decoration:underline;'>{cap_trunc}</div>"
+                        )
+
+                # 4. Date, likes, comments (single line)
                 stat_line = []
                 if date_display:
                     stat_line.append(f"<span style='color:#aaa;'>{date_display}</span>")
@@ -450,7 +468,9 @@ with lcol:
                         f"<div style='color:#232323;font-size:1.06em;margin-top:2px;'>{' &nbsp; '.join(stat_line)}</div>"
                     )
 
-                    info_lines = "".join(lines)
+                info_lines = "".join(lines)
+         
+                
 
                 st.markdown(
 f"""
@@ -566,7 +586,7 @@ f"""
                 highlight=highlight,
                 medal=medal
             )
-    
+
 # --- ANALYTICS TAB ---
 with menu_tabs[1]:
     st.title("Analytics")
@@ -751,51 +771,44 @@ with menu_tabs[1]:
     with st.expander("📊 Show raw data table"):
         st.dataframe(display_df)
 
-    st.header("Weekly Engagement Metrics")
-    if df_weekly.empty:
-        st.info("No weekly engagement data found.")
-    else:
-        all_students = sorted(df_weekly['Name'].dropna().unique())
-        eng_student_filter = st.selectbox(
-            "Engagement: Student (optional)",
-            options=["All Students"] + all_students,
-            key="engagement_student"
-        )
-        plot_df = df_weekly.copy()
-        if eng_student_filter != "All Students":
-            plot_df = plot_df[plot_df['Name'] == eng_student_filter]
-    
-        metrics = [
-            ("Videos Posted", "Videos_Posted"),
-            ("Zoom Calls Attended", "Zoom_Calls_Attended"),
-            ("Discord Feedback Requested", "Discord_Feedback_Requested"),
-            ("% Course Completed", "Course_Completed_Percent")
-        ]
-    
-        for title, col in metrics:
-            if col not in plot_df.columns:
-                st.warning(f"Column `{col}` not found in Engagement_Weekly.")
-                continue
-            st.markdown(f"#### {title} per Week")
-            if plot_df.empty:
-                st.info(f"No data for {title}")
-                continue
-            fig = px.bar(
-                plot_df,
-                x="Week",
-                y=col,
-                color="Name" if eng_student_filter == "All Students" else None,
-                title=f"{title} Each Week"
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            with st.expander(f"📊 Show data for {title}"):
-                st.dataframe(plot_df[["Name", "Week", col]])
-            csv = plot_df[["Name", "Week", col]].to_csv(index=False).encode()
-            st.download_button(f"⬇️ Download {title} Data as CSV", csv, file_name=f"{col}_weekly_export.csv", mime="text/csv")
-st.markdown("""
-    <hr style="margin-top:3em;margin-bottom:0;border:none;border-top:1.5px solid #fcb69f33;">
-    <div style='text-align:center;color:#90a7d0;font-size:1.09em;margin-top:.6em;margin-bottom:0.3em;'>
-        © Josh Batuigas 2025
-    </div>
-    """, unsafe_allow_html=True)
+st.header("Weekly Engagement Metrics")
+if df_weekly.empty:
+    st.info("No weekly engagement data found.")
+else:
+    all_students = sorted(df_weekly['Name'].dropna().unique())
+    eng_student_filter = st.selectbox(
+        "Engagement: Student (optional)",
+        options=["All Students"] + all_students,
+        key="engagement_student"
+    )
+    plot_df = df_weekly.copy()
+    if eng_student_filter != "All Students":
+        plot_df = plot_df[plot_df['Name'] == eng_student_filter]
 
+    metrics = [
+        ("Videos Posted", "Videos_Posted"),
+        ("Zoom Calls Attended", "Zoom_Calls_Attended"),
+        ("Discord Feedback Requested", "Discord_Feedback_Requested"),
+        ("% Course Completed", "Course_Completed_Percent")
+    ]
+
+    for title, col in metrics:
+        if col not in plot_df.columns:
+            st.warning(f"Column `{col}` not found in Engagement_Weekly.")
+            continue
+        st.markdown(f"#### {title} per Week")
+        if plot_df.empty:
+            st.info(f"No data for {title}")
+            continue
+        fig = px.bar(
+            plot_df,
+            x="Week",
+            y=col,
+            color="Name" if eng_student_filter == "All Students" else None,
+            title=f"{title} Each Week"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        with st.expander(f"📊 Show data for {title}"):
+            st.dataframe(plot_df[["Name", "Week", col]])
+        csv = plot_df[["Name", "Week", col]].to_csv(index=False).encode()
+        st.download_button(f"⬇️ Download {title} Data as CSV", csv, file_name=f"{col}_weekly_export.csv", mime="text/csv")
