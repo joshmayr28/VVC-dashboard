@@ -418,9 +418,9 @@ with lcol:
 
                 preview_url = safe(latest_row.get(f"{prefix}_LaPostPreview", "")) if f"{prefix}_LaPostPreview" in latest_row else ""
                 url_val = safe(latest_row.get(f"{prefix}_LaPostURL", ""))
-
+                
                 lines = []
-
+                
                 # 1. Preview image (clickable if post URL exists)
                 if preview_url:
                     if url_val:
@@ -433,7 +433,7 @@ with lcol:
                         lines.append(
                             f"<img src='{preview_url}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;'/>"
                         )
-
+                
                 # 2. If no preview, show View Post link if url available
                 elif url_val:
                     lines.append(
@@ -441,7 +441,7 @@ with lcol:
                         f"<a href='{url_val}' target='_blank' style='color:{plat['brand']};font-weight:700;text-decoration:underline;'>View Post</a>"
                         f"</div>"
                     )
-
+                
                 # 3. Caption as clickable or colored
                 if cap_trunc:
                     if url_val:
@@ -454,7 +454,7 @@ with lcol:
                         lines.append(
                             f"<div style='font-size:1.09em;color:{plat['brand']};font-weight:700;text-decoration:underline;'>{cap_trunc}</div>"
                         )
-
+                
                 # 4. Date, likes, comments (single line)
                 stat_line = []
                 if date_display:
@@ -467,8 +467,10 @@ with lcol:
                     lines.append(
                         f"<div style='color:#232323;font-size:1.06em;margin-top:2px;'>{' &nbsp; '.join(stat_line)}</div>"
                     )
+                
+                # Use newline for clean rendering between HTML blocks
+                info_lines = "\n".join(lines)
 
-                info_lines = "".join(lines)
 
                 st.markdown(
 f"""
