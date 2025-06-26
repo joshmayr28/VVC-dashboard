@@ -299,190 +299,199 @@ with lcol:
 
 
     # ---- CENTRE: Student Feed ----
-    with ccol:
-        st.markdown("#### Student Feed")
-        selected_student = st.session_state.selected_student
-        show_df = curr_df[curr_df['Name'] == selected_student] if selected_student in curr_df['Name'].values else curr_df.head(1)
-        for _, row in show_df.iterrows():
-            st.markdown(f"### {row['Name']}")
-            
-            # ------ MINI STATS BAR BELOW NAME ------
-            student_stats = (0, 0, 0, 0)
-            if not df_weekly.empty:
-                latest_week = df_weekly['Week'].max()
-                week_data = df_weekly[(df_weekly['Week'] == latest_week) & (df_weekly['Name'] == row['Name'])]
-                if not week_data.empty:
-                    stats_row = week_data.iloc[0]
-                    videos = safe_int_from_row(stats_row, "Videos_Posted")
-                    feedback = safe_int_from_row(stats_row, "Discord_Feedback_Requested")
-                    zooms = safe_int_from_row(stats_row, "Zoom_Calls_Attended")
-                    course_val = stats_row.get("%_Course_Completed", 0)
-                    try:
-                        course = float(course_val) if not pd.isna(course_val) else 0
-                    except Exception:
-                        course = 0
-                    student_stats = (videos, feedback, zooms, course)
-            st.markdown(f"""
-            <div style='background:linear-gradient(90deg,#f6f8fb,#fff);border-radius:14px;padding:7px 22px 7px 18px;margin:3px 0 17px 0;display:flex;gap:2em;font-weight:600;font-size:1.06em;box-shadow:0 1px 6px #a1c4fd10;align-items:center;'>
-                <span>📹 {videos}</span>
-                <span>💬 {feedback}</span>
-                <span>🧑‍💻 {zooms}</span>
-                <span>🎓 {avg_course:.1f}%</span>
-            </div>
-            """, unsafe_allow_html=True)
-            main_platform = max(PLATFORMS, key=lambda p: parse_number(row.get(p['foll'], 0)))
-            for plat in PLATFORMS:
-                user_val = safe(row.get(plat["user"], ""))
-                if not user_val:
-                    continue
+NO_PREVIEW_IMAGE = "https://i.imgur.com/sUFH1Aq.png"  # Your own placeholder image here
 
-                foll_val = parse_number(row.get(plat["foll"], 0))
-                prefix = plat["prefix"]
-                student_rows = df[(df['Name'] == row['Name']) & (~df[f"{prefix}_Followers"].isna())].copy()
-                student_rows = student_rows.sort_values("Date")
-                latest_foll = follower_growth = engagement = likes_val = comm_val = 0
-                date_val = cap_val = url_val = thumbnail_url = ""
-                if len(student_rows) > 0:
-                    latest_row = student_rows.iloc[-1]
-                    latest_foll = parse_number(latest_row.get(f"{prefix}_Followers", 0))
-                    prev_rows = student_rows[student_rows["Date"] <= latest_row["Date"] - pd.Timedelta(days=GROWTH_DAYS)]
-                    if len(prev_rows) > 0:
-                        prev_foll = parse_number(prev_rows.iloc[-1].get(f"{prefix}_Followers", 0))
-                    else:
-                        prev_foll = parse_number(student_rows.iloc[0].get(f"{prefix}_Followers", 0))
-                    follower_growth = latest_foll - prev_foll
+with ccol:
+    st.markdown("#### Student Feed")
+    selected_student = st.session_state.selected_student
+    show_df = curr_df[curr_df['Name'] == selected_student] if selected_student in curr_df['Name'].values else curr_df.head(1)
+    for _, row in show_df.iterrows():
+        st.markdown(f"### {row['Name']}")
 
-                    likes_val = parse_number(latest_row.get(f"{prefix}_LaPostLikes", 0))
-                    engagement = (likes_val / latest_foll * 100) if latest_foll else 0
-
-                    date_val = safe(format_post_date(latest_row.get(f"{prefix}_LaPostDate", "")))
-                    cap_val = safe(latest_row.get(f"{prefix}_LaPostCaption", ""))
-                    url_val = safe(latest_row.get(f"{prefix}_LaPostURL", ""))
-                    comm_val = parse_number(latest_row.get(f"{prefix}_LaPostComments", 0))
-                    thumbnail_url = safe(latest_row.get(f"{prefix}_LaPostThumbnail", "")) if f"{prefix}_LaPostThumbnail" in latest_row else ""
-
-                cap_trunc = (cap_val[:110] + "…") if cap_val and len(cap_val) > 110 else cap_val
-
-                # SANITIZE
-                cap_trunc = sanitize_html(cap_trunc)
-                cap_val = sanitize_html(cap_val)
-                date_display = sanitize_html(date_val)
-                url_val = sanitize_html(url_val)
-                thumbnail_url = sanitize_html(thumbnail_url)
-
-                likes_display = f"{int(round(likes_val)):,}" if likes_val else ""
-                comm_display = f"{int(round(comm_val)):,}" if comm_val else ""
-                foll_display = f"{int(round(foll_val)):,}" if foll_val else ""
-                growth_display = (
-                    f"<span style='background:#ebfdc1;border-radius:8px;padding:.20em .7em;margin-left:.4em;font-weight:700;color:#2b8328;'>+{int(follower_growth):,}</span>" if follower_growth > 0 else
-                    f"<span style='background:#fde1e1;border-radius:8px;padding:.20em .7em;margin-left:.4em;font-weight:700;color:#c81c1c;'>{int(follower_growth):,}</span>" if follower_growth < 0 else
-                    ""
-                )
-                engagement_display = (
-                    f"<span style='background:#ebfdc1;border-radius:8px;padding:.19em .6em;margin-left:.4em;font-weight:700;color:#7fa569;'>{engagement:.1f}%</span>" if engagement else ""
-                )
-
-                # ---- HIGHLIGHT NEW/TRENDING ----
-                is_new = False
-                is_trending = False
+        # MINI STATS BAR (as before)
+        student_stats = (0, 0, 0, 0)
+        if not df_weekly.empty:
+            latest_week = df_weekly['Week'].max()
+            week_data = df_weekly[(df_weekly['Week'] == latest_week) & (df_weekly['Name'] == row['Name'])]
+            if not week_data.empty:
+                stats_row = week_data.iloc[0]
+                videos = safe_int_from_row(stats_row, "Videos_Posted")
+                feedback = safe_int_from_row(stats_row, "Discord_Feedback_Requested")
+                zooms = safe_int_from_row(stats_row, "Zoom_Calls_Attended")
+                course_val = stats_row.get("%_Course_Completed", 0)
                 try:
-                    post_date = pd.to_datetime(date_val)
-                    is_new = post_date > (pd.Timestamp.now() - pd.Timedelta(days=7))
+                    course = float(course_val) if not pd.isna(course_val) else 0
                 except Exception:
-                    is_new = False
-                is_trending = (follower_growth and follower_growth > 30) or (engagement and engagement > 10)
-                badge_html = ""
-                if is_new:
-                    badge_html += " <span style='font-size:1.3em;' title='New this week'>🆕</span>"
-                if is_trending:
-                    badge_html += " <span style='font-size:1.3em;' title='Trending!'>🔥</span>"
-                if engagement > 20:
-                    badge_html += " <span style='font-size:1.2em;'>💯</span>"
-                if follower_growth > 50:
-                    badge_html += " <span style='font-size:1.2em;'>🚀</span>"
+                    course = 0
+                student_stats = (videos, feedback, zooms, course)
+        st.markdown(f"""
+        <div style='background:linear-gradient(90deg,#f6f8fb,#fff);border-radius:14px;padding:7px 22px 7px 18px;margin:3px 0 17px 0;display:flex;gap:2em;font-weight:600;font-size:1.06em;box-shadow:0 1px 6px #a1c4fd10;align-items:center;'>
+            <span>📹 {videos}</span>
+            <span>💬 {feedback}</span>
+            <span>🧑‍💻 {zooms}</span>
+            <span>🎓 {course:.1f}%</span>
+        </div>
+        """, unsafe_allow_html=True)
+        main_platform = max(PLATFORMS, key=lambda p: parse_number(row.get(p['foll'], 0)))
 
-                highlight = (
-                    "box-shadow:0 8px 32px #e1306c15;"
-                    if plat['label'] == main_platform['label'] and foll_val > 0 else ""
-                )
-                if engagement and engagement > 10:
-                    highlight += "box-shadow:0 0 12px #fa7a3a44;"
+        for plat in PLATFORMS:
+            user_val = safe(row.get(plat["user"], ""))
+            if not user_val:
+                continue
 
-                # --- Only render card if there's real content ---
-                card_has_content = (
-                    (cap_trunc and cap_trunc.strip() != "") or
-                    url_val or likes_display or comm_display or date_display
-                )
-                if not card_has_content:
-                    continue
-
-                NO_PREVIEW_IMAGE = "https://i.imgur.com/sUFH1Aq.png"  # Or your own
-
-                preview_url = safe(latest_row.get(f"{prefix}_LaPostPreview", "")) if f"{prefix}_LaPostPreview" in latest_row else ""
-                url_val = safe(latest_row.get(f"{prefix}_LaPostURL", ""))
-                
-                lines = []
-                
-                # --- New robust image preview logic ---
-                # Show real preview if available, else show 'no preview' image (not clickable)
-                display_url = preview_url if (preview_url and preview_url.startswith("http")) else NO_PREVIEW_IMAGE
-                
-                if display_url and display_url != NO_PREVIEW_IMAGE:
-                    if url_val:
-                        lines.append(
-                            f"<a href='{url_val}' target='_blank'>"
-                            f"<img src='{display_url}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;' alt='Post preview'/>"
-                            f"</a>"
-                        )
-                    else:
-                        lines.append(
-                            f"<img src='{display_url}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;' alt='Post preview'/>"
-                        )
+            foll_val = parse_number(row.get(plat["foll"], 0))
+            prefix = plat["prefix"]
+            student_rows = df[(df['Name'] == row['Name']) & (~df[f"{prefix}_Followers"].isna())].copy()
+            student_rows = student_rows.sort_values("Date")
+            latest_foll = follower_growth = engagement = likes_val = comm_val = 0
+            date_val = cap_val = url_val = ""
+            if len(student_rows) > 0:
+                latest_row = student_rows.iloc[-1]
+                latest_foll = parse_number(latest_row.get(f"{prefix}_Followers", 0))
+                prev_rows = student_rows[student_rows["Date"] <= latest_row["Date"] - pd.Timedelta(days=GROWTH_DAYS)]
+                if len(prev_rows) > 0:
+                    prev_foll = parse_number(prev_rows.iloc[-1].get(f"{prefix}_Followers", 0))
                 else:
-                    # Always show fallback image (not clickable)
+                    prev_foll = parse_number(student_rows.iloc[0].get(f"{prefix}_Followers", 0))
+                follower_growth = latest_foll - prev_foll
+
+                likes_val = parse_number(latest_row.get(f"{prefix}_LaPostLikes", 0))
+                engagement = (likes_val / latest_foll * 100) if latest_foll else 0
+
+                date_val = safe(format_post_date(latest_row.get(f"{prefix}_LaPostDate", "")))
+                cap_val = safe(latest_row.get(f"{prefix}_LaPostCaption", ""))
+                url_val = safe(latest_row.get(f"{prefix}_LaPostURL", ""))
+                comm_val = parse_number(latest_row.get(f"{prefix}_LaPostComments", 0))
+                preview_url = safe(latest_row.get(f"{prefix}_LaPostPreview", "")) if f"{prefix}_LaPostPreview" in latest_row else ""
+            else:
+                preview_url = ""
+
+            cap_trunc = (cap_val[:110] + "…") if cap_val and len(cap_val) > 110 else cap_val
+            cap_trunc = sanitize_html(cap_trunc)
+            cap_val = sanitize_html(cap_val)
+            date_display = sanitize_html(date_val)
+            url_val = sanitize_html(url_val)
+            preview_url = sanitize_html(preview_url)
+
+            likes_display = f"{int(round(likes_val)):,}" if likes_val else ""
+            comm_display = f"{int(round(comm_val)):,}" if comm_val else ""
+            foll_display = f"{int(round(foll_val)):,}" if foll_val else ""
+            growth_display = (
+                f"<span style='background:#ebfdc1;border-radius:8px;padding:.20em .7em;margin-left:.4em;font-weight:700;color:#2b8328;'>+{int(follower_growth):,}</span>" if follower_growth > 0 else
+                f"<span style='background:#fde1e1;border-radius:8px;padding:.20em .7em;margin-left:.4em;font-weight:700;color:#c81c1c;'>{int(follower_growth):,}</span>" if follower_growth < 0 else
+                ""
+            )
+            engagement_display = (
+                f"<span style='background:#ebfdc1;border-radius:8px;padding:.19em .6em;margin-left:.4em;font-weight:700;color:#7fa569;'>{engagement:.1f}%</span>" if engagement else ""
+            )
+
+            # Card highlight logic unchanged
+            is_new = False
+            is_trending = False
+            try:
+                post_date = pd.to_datetime(date_val)
+                is_new = post_date > (pd.Timestamp.now() - pd.Timedelta(days=7))
+            except Exception:
+                is_new = False
+            is_trending = (follower_growth and follower_growth > 30) or (engagement and engagement > 10)
+            badge_html = ""
+            if is_new:
+                badge_html += " <span style='font-size:1.3em;' title='New this week'>🆕</span>"
+            if is_trending:
+                badge_html += " <span style='font-size:1.3em;' title='Trending!'>🔥</span>"
+            if engagement > 20:
+                badge_html += " <span style='font-size:1.2em;'>💯</span>"
+            if follower_growth > 50:
+                badge_html += " <span style='font-size:1.2em;'>🚀</span>"
+
+            highlight = (
+                "box-shadow:0 8px 32px #e1306c15;"
+                if plat['label'] == main_platform['label'] and foll_val > 0 else ""
+            )
+            if engagement and engagement > 10:
+                highlight += "box-shadow:0 0 12px #fa7a3a44;"
+
+            card_has_content = (
+                (cap_trunc and cap_trunc.strip() != "") or
+                url_val or likes_display or comm_display or date_display
+            )
+            if not card_has_content:
+                continue
+
+            lines = []
+
+            # --- Robust image preview logic ---
+            display_url = preview_url if (preview_url and preview_url.startswith("http")) else NO_PREVIEW_IMAGE
+
+            if display_url and display_url != NO_PREVIEW_IMAGE:
+                if url_val:
                     lines.append(
-                        f"<img src='{NO_PREVIEW_IMAGE}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;opacity:0.45;' alt='No preview available'/>"
+                        f"<a href='{url_val}' target='_blank'>"
+                        f"<img src='{display_url}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;' alt='Post preview'/>"
+                        f"</a>"
                     )
-                    # Optionally, also add "View Post" link if url_val exists
-                    if url_val:
-                        lines.append(
-                            f"<div style='font-size:1.08em;margin-bottom:3px;'>"
-                            f"<a href='{url_val}' target='_blank' style='color:{plat['brand']};font-weight:600;text-decoration:underline;'>View Post</a>"
-                            f"</div>"
-                        )
-
-                
-                # 3. Caption as clickable or colored
-                if cap_trunc:
-                    if url_val:
-                        lines.append(
-                            f"<div style='font-size:1.09em;'>"
-                            f"<a href='{url_val}' target='_blank' style='color:{plat['brand']};font-weight:700;text-decoration:underline;'>{cap_trunc}</a>"
-                            f"</div>"
-                        )
-                    else:
-                        lines.append(
-                            f"<div style='font-size:1.09em;color:{plat['brand']};font-weight:700;text-decoration:underline;'>{cap_trunc}</div>"
-                        )
-                
-                # 4. Date, likes, comments (single line)
-                stat_line = []
-                if date_display:
-                    stat_line.append(f"<span style='color:#aaa;'>{date_display}</span>")
-                if likes_display:
-                    stat_line.append(f"👍 <b>{likes_display}</b>")
-                if comm_display:
-                    stat_line.append(f"💬 <b>{comm_display}</b>")
-                if stat_line:
+                else:
                     lines.append(
-                        f"<div style='color:#232323;font-size:1.06em;margin-top:2px;'>{' &nbsp; '.join(stat_line)}</div>"
+                        f"<img src='{display_url}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;' alt='Post preview'/>"
                     )
-                
-                # Use newline for clean rendering between HTML blocks
-                info_lines = "\n".join(lines)
+            else:
+                lines.append(
+                    f"<img src='{NO_PREVIEW_IMAGE}' width='120' style='border-radius:12px;box-shadow:0 1px 8px #0002;margin:2px 0 10px 0;max-width:170px;object-fit:cover;display:block;opacity:0.45;' alt='No preview available'/>"
+                )
+                if url_val:
+                    lines.append(
+                        f"<div style='font-size:1.08em;margin-bottom:3px;'>"
+                        f"<a href='{url_val}' target='_blank' style='color:{plat['brand']};font-weight:600;text-decoration:underline;'>View Post</a>"
+                        f"</div>"
+                    )
 
+            # --- LinkedIn SPECIAL: add username, followers, connections ---
+            if plat["label"] == "LinkedIn":
+                li_username = safe(latest_row.get("LI_Username", ""))
+                li_followers = safe(latest_row.get("LI_Followers", ""))
+                li_connections = safe(latest_row.get("LI_Connections", ""))
+                lines.append(
+                    f"<div style='margin-bottom:2px;font-size:1.05em;'><b>Username:</b> {li_username} &nbsp; | &nbsp; <b>Followers:</b> {li_followers} &nbsp; | &nbsp; <b>Connections:</b> {li_connections}</div>"
+                )
+            # --- YouTube SPECIAL: add username, followers, channel title, channel views ---
+            if plat["label"] == "YouTube":
+                yt_username = safe(latest_row.get("YT_Username", ""))
+                yt_followers = safe(latest_row.get("YT_Followers", ""))
+                yt_channel_title = safe(latest_row.get("YT_ChannelTitle", ""))
+                yt_channel_views = safe(latest_row.get("YT_ChannelViews", ""))
+                lines.append(
+                    f"<div style='margin-bottom:2px;font-size:1.05em;'><b>Username:</b> {yt_username} &nbsp; | &nbsp; <b>Followers:</b> {yt_followers} &nbsp; | &nbsp; <b>Channel:</b> {yt_channel_title} &nbsp; | &nbsp; <b>Views:</b> {yt_channel_views}</div>"
+                )
 
-                st.markdown(
+            # --- Caption as clickable or colored ---
+            if cap_trunc:
+                if url_val:
+                    lines.append(
+                        f"<div style='font-size:1.09em;'>"
+                        f"<a href='{url_val}' target='_blank' style='color:{plat['brand']};font-weight:700;text-decoration:underline;'>{cap_trunc}</a>"
+                        f"</div>"
+                    )
+                else:
+                    lines.append(
+                        f"<div style='font-size:1.09em;color:{plat['brand']};font-weight:700;text-decoration:underline;'>{cap_trunc}</div>"
+                    )
+
+            # --- Date, likes, comments (single line) ---
+            stat_line = []
+            if date_display:
+                stat_line.append(f"<span style='color:#aaa;'>{date_display}</span>")
+            if likes_display:
+                stat_line.append(f"👍 <b>{likes_display}</b>")
+            if comm_display:
+                stat_line.append(f"💬 <b>{comm_display}</b>")
+            if stat_line:
+                lines.append(
+                    f"<div style='color:#232323;font-size:1.06em;margin-top:2px;'>{' &nbsp; '.join(stat_line)}</div>"
+                )
+
+            info_lines = "\n".join(lines)
+
+            st.markdown(
 f"""
 <div style="background:#fff;border-radius:22px;box-shadow:0 4px 16px #0001;{highlight}
     border-top:8px solid {plat['brand']};margin-bottom:1.5em;padding:2em 2em 1.2em 2em;">
@@ -497,8 +506,8 @@ f"""
     {info_lines}
 </div>
 """,
-                    unsafe_allow_html=True
-                )
+                unsafe_allow_html=True
+            )
 
     # ---- RIGHT: Leaderboard ----
     with rcol:
