@@ -550,7 +550,7 @@ f"""
             latest = plot_df_lb.sort_values("Date").groupby("StudentID").last().reset_index()
             latest[foll_col] = latest[foll_col].apply(parse_number)
             y_col = foll_col
-            display_df = latest.sort_values(y_col, ascending=False).head(10)
+            display_df = latest.sort_values(y_col, ascending=False)
             values = display_df[y_col]
         elif lb_metric == "Follower Growth":
             grp = plot_df_lb.sort_values("Date").groupby("StudentID")
@@ -562,7 +562,7 @@ f"""
             growth_df["Followers_End"] = growth_df["Followers_End"].apply(parse_number)
             growth_df["Followers_Start"] = growth_df["Followers_Start"].apply(parse_number)
             growth_df["Growth"] = growth_df["Followers_End"] - growth_df["Followers_Start"]
-            display_df = growth_df.sort_values("Growth", ascending=False).head(10)
+            display_df = growth_df.sort_values("Growth", ascending=False)
             values = display_df["Growth"]
         else:  # Engagement
             likes_col = f"{prefix}_LaPostLikes"
@@ -574,7 +574,7 @@ f"""
                 axis=1
             )
             latest['eng'] = latest['eng'] * 100
-            display_df = latest.sort_values('eng', ascending=False).head(10)
+            display_df = latest.sort_values('eng', ascending=False)
             values = display_df['eng']
 
         st.markdown('<div style="margin-top:.7em;">', unsafe_allow_html=True)
